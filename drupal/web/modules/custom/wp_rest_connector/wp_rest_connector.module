@@ -1,0 +1,78 @@
+<?php
+
+use Drupal\Component\Serialization\Json;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\node\NodeInterface;
+
+function wp_rest_connector_theme() {
+  return [
+    'views_view_unformatted__articles' => [
+      'base hook' => 'view_view_unformatted',
+      'override preprocess functions' => TRUE,
+    ],
+  ];
+}
+
+/**
+ * Implements hook_cron.
+ */
+function wp_rest_connector_cron() {
+  // Evaluation note: Another option is to create a migrate plugin that does this. Another option is to use the feeds
+  // module with a json source.
+  $client = \Drupal::httpClient();
+  $response = $client->get('https://bedrock.lndo.site/wp-json/my-rest/posts');
+  if ($response->getStatusCode() != 200) {
+    \Drupal::logger('wp_rest_connector')
+      ->error('Unable to update posts. @reason', ['@reason' => $response->getReasonPhrase()]);
+    return;
+  }
+
+  $content = $response->getBody()->getContents();
+  $decoded = Json::decode($content);
+  if (empty($decoded)) {
+    \Drupal::logger('wp_rest_connector')
+      ->error('No posts were found.');
+    return;
+  }
+
+  $node_storage = \Drupal::entityTypeManager()->getStorage('node');
+  foreach ($decoded as $wp_post) {
+    $items = $node_storage->loadByProperties(['wp_post_id' => $wp_post['ID']]);
+    if (!empty($items)) {
+      \Drupal::logger('wp_rest_connector')
+        ->warning('Post @title already loaded.', ['@title' => $wp_post['post_title']]);
+      continue;
+    }
+
+    $node = $node_storage->create([
+      'body' => ['value' => $wp_post['post_content'], 'format' => 'full_html'],
+      'created' => strtotime($wp_post['post_date']),
+      'title' => $wp_post['post_title'],
+      'status' => NodeInterface::PUBLISHED,
+      'type' => 'article',
+      'wp_post_id' => $wp_post['ID'],
+    ]);
+    $node->save();
+    \Drupal::logger('wp_rest_connector')
+      ->info('Post @title created.', ['@title' => $wp_post['post_title']]);
+  }
+
+}
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function wp_rest_connector_entity_base_field_info(EntityTypeInterface $entity_type) {
+  $fields = [];
+  if ($entity_type->id() === 'node') {
+    $fields['wp_post_id'] = BaseFieldDefinition::create('integer')
+      ->setLabel(t('WP Post ID'))
+      ->setDescription(t('Wordpress post id'))
+      ->setDefaultValue(NULL)
+      ->setDisplayConfigurable('view', FALSE)
+      ->setDisplayConfigurable('form', FALSE);
+  }
+
+  return $fields;
+}

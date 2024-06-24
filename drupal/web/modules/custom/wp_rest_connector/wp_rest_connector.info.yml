@@ -1,0 +1,5 @@
+name: 'WP REST Connector'
+type: module
+description: 'Connects to our WP REST endpoint'
+package: Custom
+core_version_requirement: ^10 || ^11
