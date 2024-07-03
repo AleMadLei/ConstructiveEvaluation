@@ -12,5 +12,3 @@ README.md
 phpcs.xml
 wp-cli.yml
 web/debug.log
-web/index.php
-web/wp-config.php
