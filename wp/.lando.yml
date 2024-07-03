@@ -1,4 +1,4 @@
-name: bedrock
+name: alemadlei-bedrock
 recipe: wordpress
 config:
   webroot: web

@@ -21,7 +21,7 @@ function wp_rest_connector_cron() {
   // Evaluation note: Another option is to create a migrate plugin that does this. Another option is to use the feeds
   // module with a json source.
   $client = \Drupal::httpClient();
-  $response = $client->get('https://bedrock.lndo.site/wp-json/my-rest/posts');
+  $response = $client->get('https://alemadlei-bedrock.lndo.site/wp-json/my-rest/posts');
   if ($response->getStatusCode() != 200) {
     \Drupal::logger('wp_rest_connector')
       ->error('Unable to update posts. @reason', ['@reason' => $response->getReasonPhrase()]);
