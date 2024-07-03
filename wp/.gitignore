@@ -1,6 +1,7 @@
 # Folders
 vendor
 web/wp
+web/app/themes/twenty*
 
 # Files
 .env
