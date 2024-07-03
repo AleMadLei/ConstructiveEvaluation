@@ -2,3 +2,5 @@ name: alemadlei-bedrock
 recipe: wordpress
 config:
   webroot: web
+env_file:
+  - .lando.env
